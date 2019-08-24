@@ -1,0 +1,24 @@
+{
+  "name": "tk103b-server",
+  "version": "1.0.0",
+  "description": "Servidor de sockets para los dispositivos Coban tk301b",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ecorona/tk103b-Server.git"
+  },
+  "keywords": [
+    "tk103b",
+    "socket",
+    "server"
+  ],
+  "author": "Erik Corona <ecorona@live.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ecorona/tk103b-Server/issues"
+  },
+  "homepage": "https://github.com/ecorona/tk103b-Server#readme"
+}
