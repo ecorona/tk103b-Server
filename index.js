@@ -13,50 +13,76 @@ var Position = require('./position');
 
 var crearServer = function() {
 
-  var server = net.createServer((client) => {
+  var data = '';
 
-    client.on('connect', (socket)=>{
-      console.log('Nuevo cliente conectado:', socket);
-    });
+  var server = net.createServer();
 
-    client.on('timeout', ()=>{
-      console.log('Cliente dejó de responder.', client);
-      client.destroy();
-    });
+  /*
+   ██████  ██████  ███    ██ ███    ██ ███████  ██████ ████████ ██  ██████  ███    ██
+  ██      ██    ██ ████   ██ ████   ██ ██      ██         ██    ██ ██    ██ ████   ██
+  ██      ██    ██ ██ ██  ██ ██ ██  ██ █████   ██         ██    ██ ██    ██ ██ ██  ██
+  ██      ██    ██ ██  ██ ██ ██  ██ ██ ██      ██         ██    ██ ██    ██ ██  ██ ██
+   ██████  ██████  ██   ████ ██   ████ ███████  ██████    ██    ██  ██████  ██   ████
+  */
+
+  server.on('connection', (client)=>{
+    console.log('·• Nuevo cliente conectado!:', client.address());
+
+    //#TODOS: validar otro tipo de conexiones y estar seguros que es un tk103b antes de intentar procesar los mensajes.
 
     client.on('error', (err) => {
-      console.log('error en cliente', client, err);
+      console.log('socket error', client.imei, client.address(), err);
     });
 
-    client.on('close', (evt) => {
-      console.log('tracker close', evt, client);
-      client.destroy();
+    client.on('end', () => {
+      console.log('socket end',client.imei , client.address());
+      //si tiene imei, dar de baja de memoria!
+      if(client.imei && server.trackers[client.imei]){
+        server.trackers[client.imei] = {};
+        delete server.trackers[client.imei];
+        console.log('deleted: ', client.imei);
+      }else{
+        console.log('delete: no encontrado.');
+      }
       //el socket se ha cerrado, el cliente ha desconectado, perdida de internet.
     });
 
-    var data = '';
-    //arribo de datos de un dispositivo...
+    client.on('close', (hadError) => {
+      console.log('socket close', client.imei, hadError, client.address());
+      //si tiene imei, dar de baja de memoria!
+      if(client.imei && server.trackers[client.imei]){
+        server.trackers[client.imei] = {};
+        delete server.trackers[client.imei];
+        console.log('deleted: ', client.imei);
+      }else{
+        console.log('delete: no encontrado.');
+      }
+      //el socket se ha cerrado, el cliente ha desconectado, perdida de internet.
+    });
+
     client.on('data', (chunk) => {
-      console.log('Arribo de datos de cliente:', data);
       data = chunk.toString();
+      console.log('Arribo de datos de cliente:', data);
 
       //lo tratan de ver con el navegador
       if (data.substr(0, 3) === 'GET') { client.destroy(); return;}
-      //si no contiene por lo menos un ";" no nos interesa.
-      if (data.indexOf(';') === -1) { return; }
-
-      //#TODOS: validar otro tipo de conexiones y estar seguros que es un tk103b antes de intentar procesar los mensajes.
 
       //proceso de cola de mensajes recibidos segun documentacion
       var messagesToProcess = data.split(';');
-      for (var i = 0; i < messagesToProcess.length - 1; i++) {
-        processData(server, client, messagesToProcess[i]);
-      }
-      data = '';
+      console.log('Mensajes a procesar:', messagesToProcess);
+      messagesToProcess.forEach((msg)=>{
+        console.log('Procesando:', msg);
+        processData(server, client, msg);
+      });
     });
+
   });
 
-  server.trackers = new EventEmitter();
+  server.on('listening', ()=>{
+    console.log('·• Listening on:', server.address());
+  });
+
+  server.trackers = {};
   return server;
 };
 
@@ -77,13 +103,15 @@ function processData(server, client, data) {
 
   if(!imei) {return;} //si no hay imei no nos interesa
 
+  console.log('imei en proceso:', imei);
+
   //aqui separamos las partes del mensaje que vamos a procesar.
   var messageParts = data.trim().split(',');
 
   if(!messageParts.length){return;} //si el mensaje no tiene partes, no nos interesa
 
-  if(evento){
-    evento = evento;
+  if( messageParts[1]){
+    evento =  messageParts[1];
   }
 
   /*
@@ -130,9 +158,6 @@ function processData(server, client, data) {
 
     //si nuestra validación con el imei esta bien... continuamos inicializandolo
 
-    //una vez que queremos que comience a mandarnos eventos, le respondemos "LOAD"
-    client.write(new Buffer('LOAD')); //le respondemos load para que continue enviando posiciones
-
     //instanciamos el cliente como tracker para trabajar con el.
     var nuevoTracker = new Tracker(client, imei);
 
@@ -163,6 +188,9 @@ function processData(server, client, data) {
     //ponemos el imei en el cliente para futura identificacion de pings
     client.imei = imei;
 
+    //una vez que queremos que comience a mandarnos eventos, le respondemos "LOAD"
+    client.write(new Buffer('LOAD')); //le respondemos load para que continue enviando posiciones
+
     //lo instanciamos en memoria en array trackers del server con el imei como indice (puede ser el id de la bd tambien)
     server.trackers[imei] = nuevoTracker;
 
@@ -182,8 +210,6 @@ function processData(server, client, data) {
   */
   if (messageParts && messageParts[4] && messageParts[4] === 'F') {
     console.log('tk103b Server->processData->position(' + evento + ')');
-    imei = extractImei(data);
-
 
     if (!server.trackers[imei]) { //el tracker, no se encuentra entre los inicializados en memoria (logon)
       console.log('tk103b Server->Se ha recibido una posicion de un GPS no reconocido!', imei);
@@ -210,7 +236,7 @@ function processData(server, client, data) {
       //actualizar base de datos?
       //notificar a otras interfaces por ws?
 
-      console.log(`tk103b Server->Tracker ${imei} Actualizado en evento position`, server.trackers[imei].gps.lastPos);
+      console.log(`tk103b Server->Tracker ${imei} Actualizado en evento ${evento}`, server.trackers[imei].gps.lastPos);
     }
 
     //no return!, continuar por si ademas de posicion trae otro paquete, como "help me"
@@ -245,15 +271,15 @@ function processData(server, client, data) {
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
 
-    console.log(`tk103b Server->Tracker ${imei} Actualizado en evento help me`, server.trackers[imei].gps);
+    console.log(`tk103b Server->Tracker ${imei} Actualizado en evento ${evento}`, server.trackers[imei].gps);
     return; //despues de helpe no trae mas...
   }
 
   /*
     ██████  █████  ███    ██  ██████ ███████ ██       █████  ██████      ██████   █████  ███    ██ ██  ██████  ██████
-  ██      ██   ██ ████   ██ ██      ██      ██      ██   ██ ██   ██     ██   ██ ██   ██ ████   ██ ██ ██      ██    ██
-  ██      ███████ ██ ██  ██ ██      █████   ██      ███████ ██████      ██████  ███████ ██ ██  ██ ██ ██      ██    ██
-  ██      ██   ██ ██  ██ ██ ██      ██      ██      ██   ██ ██   ██     ██      ██   ██ ██  ██ ██ ██ ██      ██    ██
+   ██      ██   ██ ████   ██ ██      ██      ██      ██   ██ ██   ██     ██   ██ ██   ██ ████   ██ ██ ██      ██    ██
+   ██      ███████ ██ ██  ██ ██      █████   ██      ███████ ██████      ██████  ███████ ██ ██  ██ ██ ██      ██    ██
+   ██      ██   ██ ██  ██ ██ ██      ██      ██      ██   ██ ██   ██     ██      ██   ██ ██  ██ ██ ██ ██      ██    ██
     ██████ ██   ██ ██   ████  ██████ ███████ ███████ ██   ██ ██   ██     ██      ██   ██ ██   ████ ██  ██████  ██████
   */
   /*
@@ -297,7 +323,7 @@ function processData(server, client, data) {
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
 
-    console.log(`tk103b Server->Tracker ${imei} Actualizado en evento etc (cancelar panico aceptado)`, server.trackers[imei].gps);
+    console.log(`tk103b Server->Tracker ${imei} Actualizado en evento ${evento}`, server.trackers[imei].gps);
     return; //fin!
   }
 }
@@ -314,7 +340,6 @@ function extractImei(message) {
 }
 
 //aqui vamos!
-var serverPort = 9000;
-crearServer().listen(serverPort, () => {
-  console.log('·• tk103b Server->start->port:', serverPort);
+crearServer().listen(9000, () => {
+  console.log('·• tk103b Server ready!');
 });
