@@ -1,5 +1,4 @@
 var net = require('net');
-var EventEmitter = require('events').EventEmitter;
 var Tracker = require('./tracker');
 var Position = require('./position');
 
