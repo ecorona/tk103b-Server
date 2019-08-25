@@ -11,6 +11,7 @@ server.trackers.on('logon', (tracker) => {
 
   //podemos...
   //dar acceso! (aqui podriamos validar si el tracker esta activo en BD etc, y continuar o terminar)
+  console.log('dando acceso a', tracker.imei);
   tracker.client.write(new Buffer('LOAD'));
   //o..  desconectarlo!
   //tracker.destroy();
@@ -39,7 +40,6 @@ server.trackers.on('logon', (tracker) => {
 
   //position
   tracker.on('position', (position) => {
-    console.log('tracker position :', tracker.imei, position);
 
     let pos = {
       type: 'Point',
@@ -50,29 +50,30 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastPos = pos;
     tracker.gps.lastSeenAt = Date.now();
 
+    console.log('tracker position :', tracker.imei, tracker.gps.lastPos);
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
 
   //ping
   tracker.on('ping', () => {
-    console.log('tracker ping :', tracker.imei, tracker.gps.panico);
-
     //actualizar estado en memoria
     tracker.gps.lastSeenAt = Date.now();
     tracker.gps.online = true;
 
+    console.log('tracker ping :', tracker.imei, !tracker.gps.panico?'Normal':'Pánico');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
 
   //help me!
   tracker.on('help me', ()=>{
-    console.log('tracker help me :', tracker.imei);
     //actualizar en memoria
     tracker.gps.online  = true;
     tracker.gps.panico = true;
     tracker.gps.lastSeenAt = Date.now();
+
+    console.log('tracker help me :', tracker.imei, !tracker.gps.panico?'Normal':'Pánico');
 
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
@@ -80,12 +81,12 @@ server.trackers.on('logon', (tracker) => {
 
   //panico ha sido desactivado
   tracker.on('et', ()=>{
-    console.log('tracker et:', tracker.imei);
     //actualizar en memoria
     tracker.gps.online  = true;
     tracker.gps.panico = false;
     tracker.gps.lastSeenAt = Date.now();
 
+    console.log('tracker et:', tracker.imei, !tracker.gps.panico?'Normal':'Pánico');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
 
