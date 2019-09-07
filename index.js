@@ -3,8 +3,10 @@ require('dotenv').config();
 require('console-stamp')(console, { label: false, colors: { stamp: ['gray', 'bgBlack'] } });
 var gpstracker = require('./lib/server');
 
-var logData = true;
-var logCollector = true;
+var logData = false;
+var logCollector = false;
+var logPings = false;
+var logPosition = true;
 
 //instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
@@ -48,7 +50,7 @@ server.trackers.on('logon', (tracker) => {
   //o..  desconectarlo!
   //tracker.destroy();
   setTimeout(()=>{
-    tracker.trackEvery(180).seconds(); //decirle que nos mande su ubicación cada 60 segundos
+    tracker.trackEvery(3).minutes(); //decirle que nos mande su ubicación cada 3 minutos
     tracker.setTimeZone('-6'); //establecerle una zona horaria
     tracker.getPosition(); //solicitar su posicion
   }, 5000);
@@ -82,7 +84,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastPos = pos;
     tracker.gps.lastSeenAt = Date.now();
 
-    console.log('tracker position :', tracker.imei, tracker.gps.lastPos);
+    if(logPosition){console.log('tracker position :', tracker.imei, tracker.gps.lastPos);}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
@@ -93,7 +95,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastSeenAt = Date.now();
     tracker.gps.online = true;
 
-    console.log('tracker ping :', tracker.imei, tracker.gps.panico?'Pánico':'');
+    if(logPings){console.log('tracker ping :', tracker.imei, tracker.gps.panico?'Pánico':'');}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
@@ -106,19 +108,30 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastSeenAt = Date.now();
 
     console.log('tracker help me :', tracker.imei, tracker.gps.panico?'Pánico':'');
-
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
 
-  //panico ha sido desactivado
+  //comando desactivar panico ha sido desactivado
   tracker.on('et', ()=>{
     //actualizar en memoria
     tracker.gps.online  = true;
     tracker.gps.panico = false;
     tracker.gps.lastSeenAt = Date.now();
 
-    console.log('tracker et:', tracker.imei, tracker.gps.panico?'Pánico':'');
+    console.log('DesactivarAlarma aceptado:', tracker.imei, tracker.gps.panico?'Pánico':'');
+    //actualizar base de datos?
+    //notificar a otras interfaces por ws?
+
+  });
+
+  //comando timezone ha sido aceptado
+  tracker.on('it', ()=>{
+    //actualizar en memoria
+    tracker.gps.online  = true;
+    tracker.gps.lastSeenAt = Date.now();
+
+    console.log('TimeZone aceptado:', tracker.imei);
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
 
