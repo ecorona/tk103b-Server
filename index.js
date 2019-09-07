@@ -1,21 +1,15 @@
-require('console-stamp')(console, {
-  label:false,
-  pattern:'yyyy-mm-dd HH:MM:ss.l',
-  colors:{
-    stamp: ['gray', 'bgBlack']
-  }
-});
-
 require('dotenv').config();
-
+require('console-stamp')(console, { label: false, colors: { stamp: ['gray', 'bgBlack'] } });
 var gpstracker = require('./lib/server');
 
+//instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
 });
 
-//cuando un tracker se quiere conectar...
+//preparamos los eventos...
 server.trackers.on('logon', (tracker) => {
+  //cuando un tracker se quiere conectar...
 
   console.log('tracker con imei solicita acceso:', tracker.imei);
 
