@@ -3,11 +3,13 @@ require('dotenv').config();
 require('console-stamp')(console, { label: false, colors: { stamp: ['gray', 'bgBlack'] } });
 var gpstracker = require('./lib/server');
 
+var logData = true;
+var logCollector = true;
 
 //instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
-
+  server.logData = logData;
   server.conectados = [];
 
   //GarbageCollector
@@ -17,13 +19,13 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
       var timeup = moment().subtract(minutes, 'm').unix() * 1000;
       // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
       // tracker.gps.lastSeenAt haya caducado en 2m
-      console.log('Collector is collecting:', timeup);
+      if(logCollector){console.log('Collector is collecting:', timeup);}
       server.conectados.forEach((imei, index)=>{
         if(server.trackers[imei].gps.online){
           if(server.trackers[imei].gps.lastSeenAt<timeup){
             server.conectados.splice(index, 1);
             delete server.trackers[imei];
-            console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutes+' minutes iddle)... Deleted.');
+            if(logCollector){console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutes+' minutes iddle)... Deleted.');}
           }
         }
       });
