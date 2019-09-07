@@ -10,7 +10,18 @@ var logPosition = process.env.LOG_POSITION||true;
 var logSend = process.env.LOG_SEND||false;
 var logCommands = process.env.LOG_COMMANDS||true;
 
-//instanciamos el server...
+var collectEvery = 30000; //collect iddle trackers every 30s
+
+var minutesIddle = 2; //minutes to wait before removing a tracker after no response
+
+/*
+███████ ███████ ██████  ██    ██ ███████ ██████  ███████ ███████ ████████ ██    ██ ██████
+██      ██      ██   ██ ██    ██ ██      ██   ██ ██      ██         ██    ██    ██ ██   ██
+███████ █████   ██████  ██    ██ █████   ██████  ███████ █████      ██    ██    ██ ██████
+     ██ ██      ██   ██  ██  ██  ██      ██   ██      ██ ██         ██    ██    ██ ██
+███████ ███████ ██   ██   ████   ███████ ██   ██ ███████ ███████    ██     ██████  ██
+*/
+
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
   console.log('·• Logging:');
@@ -24,34 +35,54 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   server.logData = logData;
   server.conectados = [];
 
-  //GarbageCollector
+  /*
+   ██████   █████  ██████  ██████   █████   ██████  ███████  ██████  ██████  ██      ██      ███████  ██████ ████████  ██████  ██████
+  ██       ██   ██ ██   ██ ██   ██ ██   ██ ██       ██      ██      ██    ██ ██      ██      ██      ██         ██    ██    ██ ██   ██
+  ██   ███ ███████ ██████  ██████  ███████ ██   ███ █████   ██      ██    ██ ██      ██      █████   ██         ██    ██    ██ ██████
+  ██    ██ ██   ██ ██   ██ ██   ██ ██   ██ ██    ██ ██      ██      ██    ██ ██      ██      ██      ██         ██    ██    ██ ██   ██
+   ██████  ██   ██ ██   ██ ██████  ██   ██  ██████  ███████  ██████  ██████  ███████ ███████ ███████  ██████    ██     ██████  ██   ██
+  */
+
   setInterval(() => {
+    var trackerTimeup = moment().subtract(minutesIddle, 'm').unix() * 1000;
     if(server.conectados.length){
-      var minutes = 2;
-      var timeup = moment().subtract(minutes, 'm').unix() * 1000;
       // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
       // tracker.gps.lastSeenAt haya caducado en 2m
-      if(logCollector){console.log('Collector is collecting:', timeup);}
       server.conectados.forEach((imei, index)=>{
         if(server.trackers[imei].gps.online){
-          if(server.trackers[imei].gps.lastSeenAt<timeup){
+          if(server.trackers[imei].gps.lastSeenAt<trackerTimeup){
             server.conectados.splice(index, 1);
             delete server.trackers[imei];
-            if(logCollector){console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutes+' minutes iddle)... Deleted.');}
+            if(logCollector){console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutesIddle+' minutes iddle)... Deleted.');}
           }
         }
       });
     }
-  }, 10000);
-
+  }, collectEvery);
 });
 
-//preparamos los eventos...
+/*
+████████ ██████   █████   ██████ ██   ██ ███████ ██████      ███████ ██    ██ ███████ ███    ██ ████████ ███████
+   ██    ██   ██ ██   ██ ██      ██  ██  ██      ██   ██     ██      ██    ██ ██      ████   ██    ██    ██
+   ██    ██████  ███████ ██      █████   █████   ██████      █████   ██    ██ █████   ██ ██  ██    ██    ███████
+   ██    ██   ██ ██   ██ ██      ██  ██  ██      ██   ██     ██       ██  ██  ██      ██  ██ ██    ██         ██
+   ██    ██   ██ ██   ██  ██████ ██   ██ ███████ ██   ██     ███████   ████   ███████ ██   ████    ██    ███████
+*/
+
+
+/*
+██       ██████   ██████   ██████  ███    ██
+██      ██    ██ ██       ██    ██ ████   ██
+██      ██    ██ ██   ███ ██    ██ ██ ██  ██
+██      ██    ██ ██    ██ ██    ██ ██  ██ ██
+███████  ██████   ██████   ██████  ██   ████
+*/
+
 server.trackers.on('logon', (tracker) => {
   //cuando un tracker se quiere conectar...
   tracker.logSend = logSend;
   tracker.logCommands = logCommands;
-  console.log(`Tracker ${tracker.imei} solicita acceso`);
+  console.log(`Tracker ${tracker.imei} solicita acceso.`);
 
   //podemos...
   //dar acceso! (aqui podriamos validar si el tracker esta activo en BD etc, y continuar o terminar)
@@ -60,6 +91,8 @@ server.trackers.on('logon', (tracker) => {
   server.conectados.push(tracker.imei);
   //o..  desconectarlo!
   //tracker.destroy();
+
+  //inicializarlo...
   setTimeout(()=>{
     console.log(`Setting up tracker ${tracker.imei}`);
     tracker.trackEvery(3).minutes(); //decirle que nos mande su ubicación cada 3 minutos
@@ -84,45 +117,69 @@ server.trackers.on('logon', (tracker) => {
 
   //eventos...
 
-  //position
-  tracker.on('position', (position) => {
+  /*
+  ██████   ██████  ███████ ██ ████████ ██  ██████  ███    ██
+  ██   ██ ██    ██ ██      ██    ██    ██ ██    ██ ████   ██
+  ██████  ██    ██ ███████ ██    ██    ██ ██    ██ ██ ██  ██
+  ██      ██    ██      ██ ██    ██    ██ ██    ██ ██  ██ ██
+  ██       ██████  ███████ ██    ██    ██  ██████  ██   ████
+  */
 
+  tracker.on('position', (position) => {
     let pos = {
       type: 'Point',
       coordinates: [position.lng, position.lat]
     };
-
     //actualizar posicion en memoria
     tracker.gps.lastPos = pos;
     tracker.gps.lastSeenAt = Date.now();
-
     if(logPosition){console.log(`Tracker ${tracker.imei} position :`, tracker.gps.lastPos);}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
 
-  //ping
+  /*
+  ██████  ██ ███    ██  ██████
+  ██   ██ ██ ████   ██ ██
+  ██████  ██ ██ ██  ██ ██   ███
+  ██      ██ ██  ██ ██ ██    ██
+  ██      ██ ██   ████  ██████
+  */
+
   tracker.on('ping', () => {
     //actualizar estado en memoria
     tracker.gps.lastSeenAt = Date.now();
     tracker.gps.online = true;
-
     if(logPings){console.log(`Tracker ${tracker.imei} ping:`, tracker.imei, tracker.gps.panico?'Pánico':'');}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
 
-  //help me!
+  /*
+  ██   ██ ███████ ██      ██████      ███    ███ ███████ ██
+  ██   ██ ██      ██      ██   ██     ████  ████ ██      ██
+  ███████ █████   ██      ██████      ██ ████ ██ █████   ██
+  ██   ██ ██      ██      ██          ██  ██  ██ ██
+  ██   ██ ███████ ███████ ██          ██      ██ ███████ ██
+  */
+
   tracker.on('help me', ()=>{
     //actualizar en memoria
     tracker.gps.online  = true;
     tracker.gps.panico = true;
     tracker.gps.lastSeenAt = Date.now();
-
     console.log(`Tracker ${tracker.imei} help me:`, tracker.gps.panico?'Pánico':'');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
+
+  /*
+  ███████ ████████
+  ██         ██
+  █████      ██
+  ██         ██
+  ███████    ██
+  */
 
   //comando desactivar panico ha sido desactivado
   tracker.on('et', ()=>{
@@ -130,23 +187,26 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.online  = true;
     tracker.gps.panico = false;
     tracker.gps.lastSeenAt = Date.now();
-
     console.log('DesactivarAlarma aceptado:', tracker.imei, tracker.gps.panico?'Pánico':'');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
-
   });
+
+  /*
+  ██ ████████
+  ██    ██
+  ██    ██
+  ██    ██
+  ██    ██
+  */
 
   //comando timezone ha sido aceptado
   tracker.on('it', ()=>{
     //actualizar en memoria
     tracker.gps.online  = true;
     tracker.gps.lastSeenAt = Date.now();
-
     console.log('setTimeZone aceptado:', tracker.imei);
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
-
   });
-
 });
