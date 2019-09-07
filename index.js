@@ -49,17 +49,16 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
     if(server.conectados.length){
       // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
       // tracker.gps.lastSeenAt haya caducado en 2m
-      server.conectados.forEach((imei, index)=>{
-        if(server.trackers[imei].gps.online){
+      server.conectados.forEach((imei)=>{
+        if(server.trackers[imei] && server.trackers[imei].gps && server.trackers[imei].gps.online){
           if(server.trackers[imei].gps.lastSeenAt<trackerTimeup){
-            server.conectados.splice(index, 1);
-            delete server.trackers[imei];
-            if(logCollector){console.log('[-1] Tracker '+imei+' has gone offline (GarbageCollector - '+minutesIddle+' minutes iddle)... Deleted.');}
+            server.trackers[imei].gps.online = false;
+            if(logCollector){console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutesIddle+' minutes iddle).');}
           }
         }
       });
 
-      if(logCollector){console.log('This server is currently tracking ',server.conectados.length,'online devices.');}
+      if(logCollector){console.log('This server is currently tracking ',server.conectados.length,'devices.');}
     }
   }, collectEvery);
 });
@@ -92,7 +91,7 @@ server.trackers.on('logon', (tracker) => {
   tracker.send('LOAD');
   console.log(`[+1] Tracker ${tracker.imei} is online.`);
   server.conectados.push(tracker.imei);
-  console.log('This server is currently tracking ',server.conectados.length,'online devices.');
+  console.log('This server is currently tracking ',server.conectados.length,'devices.');
   //o..  desconectarlo!
   //tracker.destroy();
 
@@ -116,7 +115,7 @@ server.trackers.on('logon', (tracker) => {
     heading: -1,
     panico: false,
     online: true,
-    descripcion: 'Nombre del cliente o vehiculo o dispositivo'
+    descripcion: ''
   };
 
   //eventos...
@@ -133,7 +132,7 @@ server.trackers.on('logon', (tracker) => {
     //actualizar posicion en memoria
     tracker.gps.lastPos = position.point;
     tracker.gps.lastSeenAt = Date.now();
-    if(logPosition){console.log(`Tracker ${tracker.imei} position :`, tracker.gps.lastPos);}
+    if(logPosition){console.log(`Tracker ${tracker.imei} position:`, tracker.gps.lastPos);}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
