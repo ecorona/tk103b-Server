@@ -1,6 +1,6 @@
 var gpstracker = require('./lib/server');
 
-var server = gpstracker.create().listen(9000, () => {
+var server = gpstracker.create().listen(9001, () => {
   console.log('·• Listening on:', server.address());
 });
 
@@ -15,11 +15,11 @@ server.trackers.on('logon', (tracker) => {
   tracker.client.write(new Buffer('LOAD'));
   //o..  desconectarlo!
   //tracker.destroy();
-
-  tracker.trackEvery(60).seconds(); //decirle que nos mande su ubicación cada 60 segundos
-  tracker.setTimeZone('-6'); //establecerle una zona horaria
-  tracker.getPosition(); //solicitar su posicion
-
+  setTimeout(()=>{
+    tracker.trackEvery(60).seconds(); //decirle que nos mande su ubicación cada 60 segundos
+    tracker.setTimeZone('-6'); //establecerle una zona horaria
+    tracker.getPosition(); //solicitar su posicion
+  }, 5000);
 
   //al ponerle un objeto gps lo estamos "aceptando"
   tracker.gps = {
