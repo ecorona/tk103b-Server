@@ -6,9 +6,11 @@ require('console-stamp')(console, {
   }
 });
 
+require('dotenv').config();
+
 var gpstracker = require('./lib/server');
 
-var server = gpstracker.create().listen(9001, () => {
+var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
 });
 
