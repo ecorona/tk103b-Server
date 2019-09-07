@@ -12,17 +12,23 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
 
   //GarbageCollector
   setInterval(() => {
-    var timeup = moment().subtract(2, 'm').unix() * 1000;
-    // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
-    // tracker.gps.lastSeenAt haya caducado en 2m
-    server.conectados.forEach((imei)=>{
-      if(server.trackers[imei].gps.online){
-        if(server.trackers[imei].gps.lastSeenAt<timeup){
-          server.trackers[imei].gps.online = false;
-          console.log('Tracker '+imei+' has gone offline (GarbageCollector).');
+    if(server.conectados.length){
+      var minutes = 2;
+      var timeup = moment().subtract(minutes, 'm').unix() * 1000;
+      // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
+      // tracker.gps.lastSeenAt haya caducado en 2m
+      console.log('Collector is collecting:', timeup);
+      server.conectados.forEach((imei, index)=>{
+        if(server.trackers[imei].gps.online){
+          if(server.trackers[imei].gps.lastSeenAt<timeup){
+            server.trackers[imei].gps.online = false;
+            server.conectados.splice(index, 1);
+            delete server.trackers[imei];
+            console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutes+' minutes iddle)... Deleted.');
+          }
         }
-      }
-    });
+      });
+    }
   }, 10000);
 
 });
