@@ -21,7 +21,6 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
       server.conectados.forEach((imei, index)=>{
         if(server.trackers[imei].gps.online){
           if(server.trackers[imei].gps.lastSeenAt<timeup){
-            server.trackers[imei].gps.online = false;
             server.conectados.splice(index, 1);
             delete server.trackers[imei];
             console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutes+' minutes iddle)... Deleted.');
@@ -92,7 +91,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastSeenAt = Date.now();
     tracker.gps.online = true;
 
-    console.log('tracker ping :', tracker.imei, !tracker.gps.panico?'Normal':'Pánico');
+    console.log('tracker ping :', tracker.imei, tracker.gps.panico?'Pánico':'');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
@@ -104,7 +103,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.panico = true;
     tracker.gps.lastSeenAt = Date.now();
 
-    console.log('tracker help me :', tracker.imei, !tracker.gps.panico?'Normal':'Pánico');
+    console.log('tracker help me :', tracker.imei, tracker.gps.panico?'Pánico':'');
 
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
@@ -117,7 +116,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.panico = false;
     tracker.gps.lastSeenAt = Date.now();
 
-    console.log('tracker et:', tracker.imei, !tracker.gps.panico?'Normal':'Pánico');
+    console.log('tracker et:', tracker.imei, tracker.gps.panico?'Pánico':'');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
 
