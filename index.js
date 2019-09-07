@@ -61,6 +61,7 @@ server.trackers.on('logon', (tracker) => {
   //o..  desconectarlo!
   //tracker.destroy();
   setTimeout(()=>{
+    console.log('Setting up tracker', tracker.imei);
     tracker.trackEvery(3).minutes(); //decirle que nos mande su ubicación cada 3 minutos
     tracker.setTimeZone('-6'); //establecerle una zona horaria
     tracker.getPosition(); //solicitar su posicion
