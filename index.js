@@ -51,17 +51,17 @@ server.trackers.on('logon', (tracker) => {
   //cuando un tracker se quiere conectar...
   tracker.logSend = logSend;
   tracker.logCommands = logCommands;
-  console.log('tracker con imei solicita acceso:', tracker.imei);
+  console.log(`Tracker ${tracker.imei} solicita acceso`);
 
   //podemos...
   //dar acceso! (aqui podriamos validar si el tracker esta activo en BD etc, y continuar o terminar)
-  console.log('dando acceso a', tracker.imei);
+  console.log(`Dando acceso a ${tracker.imei}`);
   tracker.send('LOAD');
   server.conectados.push(tracker.imei);
   //o..  desconectarlo!
   //tracker.destroy();
   setTimeout(()=>{
-    console.log('Setting up tracker', tracker.imei);
+    console.log(`Setting up tracker ${tracker.imei}`);
     tracker.trackEvery(3).minutes(); //decirle que nos mande su ubicación cada 3 minutos
     tracker.setTimeZone('-6'); //establecerle una zona horaria
     tracker.getPosition(); //solicitar su posicion
@@ -96,7 +96,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastPos = pos;
     tracker.gps.lastSeenAt = Date.now();
 
-    if(logPosition){console.log('tracker position :', tracker.imei, tracker.gps.lastPos);}
+    if(logPosition){console.log(`Tracker ${tracker.imei} position :`, tracker.gps.lastPos);}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
@@ -107,7 +107,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.lastSeenAt = Date.now();
     tracker.gps.online = true;
 
-    if(logPings){console.log('tracker ping :', tracker.imei, tracker.gps.panico?'Pánico':'');}
+    if(logPings){console.log(`Tracker ${tracker.imei} ping:`, tracker.imei, tracker.gps.panico?'Pánico':'');}
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
@@ -119,7 +119,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.panico = true;
     tracker.gps.lastSeenAt = Date.now();
 
-    console.log('tracker help me :', tracker.imei, tracker.gps.panico?'Pánico':'');
+    console.log(`Tracker ${tracker.imei} help me:`, tracker.gps.panico?'Pánico':'');
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
   });
