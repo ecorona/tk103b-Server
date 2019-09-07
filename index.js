@@ -1,3 +1,4 @@
+var moment = require('moment');
 require('dotenv').config();
 require('console-stamp')(console, { label: false, colors: { stamp: ['gray', 'bgBlack'] } });
 var gpstracker = require('./lib/server');
@@ -5,6 +6,22 @@ var gpstracker = require('./lib/server');
 //instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
+
+  //GarbageCollector
+  setInterval(() => {
+    var timeup = moment().subtract(2, 'm').unix() * 1000;
+    // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
+    // tracker.gps.lastSeenAt haya caducado en 2m
+    server.trackers.forEach((tracker)=>{
+      if(tracker.gps.online){
+        if(tracker.gps.lastSeenAt<timeup){
+          tracker.gps.online = false;
+          console.log('Tracker '+tracker.imei+' has gone offline (GarbageCollector).');
+        }
+      }
+    });
+  }, 10000);
+
 });
 
 //preparamos los eventos...
