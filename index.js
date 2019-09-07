@@ -14,12 +14,12 @@ var logCommands = process.env.LOG_COMMANDS||true;
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
   console.log('·• Logging:');
-  console.log('data:      ',logData?'ON':'OFF');
-  console.log('collector: ',logCollector?'ON':'OFF');
-  console.log('pings:     ',logPings?'ON':'OFF');
-  console.log('position:  ',logPosition?'ON':'OFF');
-  console.log('send:      ',logSend?'ON':'OFF');
-  console.log('commands:  ',logCommands?'ON':'OFF');
+  console.log('   data:      ',logData?'ON':'OFF');
+  console.log('   collector: ',logCollector?'ON':'OFF');
+  console.log('   pings:     ',logPings?'ON':'OFF');
+  console.log('   position:  ',logPosition?'ON':'OFF');
+  console.log('   send:      ',logSend?'ON':'OFF');
+  console.log('   commands:  ',logCommands?'ON':'OFF');
   console.log('•·');
   server.logData = logData;
   server.conectados = [];
@@ -142,7 +142,7 @@ server.trackers.on('logon', (tracker) => {
     tracker.gps.online  = true;
     tracker.gps.lastSeenAt = Date.now();
 
-    console.log('TimeZone aceptado:', tracker.imei);
+    console.log('setTimeZone aceptado:', tracker.imei);
     //actualizar base de datos?
     //notificar a otras interfaces por ws?
 
