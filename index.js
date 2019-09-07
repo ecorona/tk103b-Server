@@ -3,20 +3,23 @@ require('dotenv').config();
 require('console-stamp')(console, { label: false, colors: { stamp: ['gray', 'bgBlack'] } });
 var gpstracker = require('./lib/server');
 
+
 //instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
+
+  server.conectados = [];
 
   //GarbageCollector
   setInterval(() => {
     var timeup = moment().subtract(2, 'm').unix() * 1000;
     // recorrer todos los trackers y poner offline aquellos que el tiempo almacenado en
     // tracker.gps.lastSeenAt haya caducado en 2m
-    server.trackers.forEach((tracker)=>{
-      if(tracker.gps.online){
-        if(tracker.gps.lastSeenAt<timeup){
-          tracker.gps.online = false;
-          console.log('Tracker '+tracker.imei+' has gone offline (GarbageCollector).');
+    server.conectados.forEach((imei)=>{
+      if(server.trackers[imei].gps.online){
+        if(server.trackers[imei].gps.lastSeenAt<timeup){
+          server.trackers[imei].gps.online = false;
+          console.log('Tracker '+imei+' has gone offline (GarbageCollector).');
         }
       }
     });
@@ -33,11 +36,12 @@ server.trackers.on('logon', (tracker) => {
   //podemos...
   //dar acceso! (aqui podriamos validar si el tracker esta activo en BD etc, y continuar o terminar)
   console.log('dando acceso a', tracker.imei);
-  tracker.client.write(new Buffer('LOAD'));
+  tracker.send('LOAD');
+  server.conectados.push(tracker.imei);
   //o..  desconectarlo!
   //tracker.destroy();
   setTimeout(()=>{
-    tracker.trackEvery(60).seconds(); //decirle que nos mande su ubicación cada 60 segundos
+    tracker.trackEvery(180).seconds(); //decirle que nos mande su ubicación cada 60 segundos
     tracker.setTimeZone('-6'); //establecerle una zona horaria
     tracker.getPosition(); //solicitar su posicion
   }, 5000);
