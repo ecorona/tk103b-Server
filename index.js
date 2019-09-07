@@ -1,3 +1,11 @@
+require('console-stamp')(console, {
+  label:false,
+  pattern:'yyyy-mm-dd HH:MM:ss.l',
+  colors:{
+    stamp: ['gray', 'bgBlack']
+  }
+});
+
 var gpstracker = require('./lib/server');
 
 var server = gpstracker.create().listen(9001, () => {

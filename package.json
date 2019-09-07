@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/ecorona/tk103b-Server/issues"
   },
-  "homepage": "https://github.com/ecorona/tk103b-Server#readme"
+  "homepage": "https://github.com/ecorona/tk103b-Server#readme",
+  "dependencies": {
+    "console-stamp": "^0.2.9"
+  }
 }
