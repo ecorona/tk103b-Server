@@ -13,14 +13,14 @@ var logCommands = process.env.LOG_COMMANDS||true;
 //instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('·• Listening on:', server.address());
-  console.log('·• Logging:', server.address());
-  console.log('data: ',logData?'ON':'OFF');
+  console.log('·• Logging:');
+  console.log('data:      ',logData?'ON':'OFF');
   console.log('collector: ',logCollector?'ON':'OFF');
-  console.log('pings: ',logPings?'ON':'OFF');
-  console.log('position: ',logPosition?'ON':'OFF');
-  console.log('send: ',logSend?'ON':'OFF');
-  console.log('commands: ',logCommands?'ON':'OFF');
-  console.log('');
+  console.log('pings:     ',logPings?'ON':'OFF');
+  console.log('position:  ',logPosition?'ON':'OFF');
+  console.log('send:      ',logSend?'ON':'OFF');
+  console.log('commands:  ',logCommands?'ON':'OFF');
+  console.log('•·');
   server.logData = logData;
   server.conectados = [];
 
