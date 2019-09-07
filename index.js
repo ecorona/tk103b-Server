@@ -23,7 +23,7 @@ var minutesIddle = 2; //minutes to wait before removing a tracker after no respo
 */
 
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
-  console.log('·• Listening on:', server.address());
+  console.log('·• tk103b Server Listening on:', server.address());
   console.log('·• Logging:');
   console.log('   data:      ',logData?'ON':'OFF');
   console.log('   collector: ',logCollector?'ON':'OFF');
@@ -33,6 +33,7 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
   console.log('   commands:  ',logCommands?'ON':'OFF');
   console.log('•·');
   server.logData = logData;
+
   server.conectados = [];
 
   /*
@@ -53,10 +54,12 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
           if(server.trackers[imei].gps.lastSeenAt<trackerTimeup){
             server.conectados.splice(index, 1);
             delete server.trackers[imei];
-            if(logCollector){console.log('Tracker '+imei+' has gone offline (GarbageCollector - '+minutesIddle+' minutes iddle)... Deleted.');}
+            if(logCollector){console.log('[-1] Tracker '+imei+' has gone offline (GarbageCollector - '+minutesIddle+' minutes iddle)... Deleted.');}
           }
         }
       });
+
+      if(logCollector){console.log('This server is currently tracking ',server.conectados.length,'online devices.');}
     }
   }, collectEvery);
 });
@@ -82,13 +85,14 @@ server.trackers.on('logon', (tracker) => {
   //cuando un tracker se quiere conectar...
   tracker.logSend = logSend;
   tracker.logCommands = logCommands;
-  console.log(`Tracker ${tracker.imei} solicita acceso.`);
+  console.log(`Tracker ${tracker.imei} is requesting access.`);
 
   //podemos...
   //dar acceso! (aqui podriamos validar si el tracker esta activo en BD etc, y continuar o terminar)
-  console.log(`Dando acceso a ${tracker.imei}`);
   tracker.send('LOAD');
+  console.log(`[+1] Tracker ${tracker.imei} is online.`);
   server.conectados.push(tracker.imei);
+  console.log('This server is currently tracking ',server.conectados.length,'online devices.');
   //o..  desconectarlo!
   //tracker.destroy();
 
@@ -102,7 +106,7 @@ server.trackers.on('logon', (tracker) => {
 
   //al ponerle un objeto gps lo estamos "aceptando"
   tracker.gps = {
-    id:  'id de la base de datos',
+    id:  parseInt(Math.random()*10000000), //db
     lastPos: {
       type: 'Point',
       coordinates: [0, 0] //lng, lat
@@ -126,12 +130,8 @@ server.trackers.on('logon', (tracker) => {
   */
 
   tracker.on('position', (position) => {
-    let pos = {
-      type: 'Point',
-      coordinates: [position.lng, position.lat]
-    };
     //actualizar posicion en memoria
-    tracker.gps.lastPos = pos;
+    tracker.gps.lastPos = position.point;
     tracker.gps.lastSeenAt = Date.now();
     if(logPosition){console.log(`Tracker ${tracker.imei} position :`, tracker.gps.lastPos);}
     //actualizar base de datos?
