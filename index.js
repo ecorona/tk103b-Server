@@ -3,10 +3,12 @@ require('dotenv').config();
 require('console-stamp')(console, { label: false, colors: { stamp: ['gray', 'bgBlack'] } });
 var gpstracker = require('./lib/server');
 
-var logData = false;
-var logCollector = false;
-var logPings = false;
-var logPosition = true;
+var logData = process.env.LOG_DATA||false;
+var logCollector = process.env.LOG_COLLECTOR||false;
+var logPings = process.env.LOG_PINGS||false;
+var logPosition = process.env.LOG_POSITION||true;
+var logSend = process.env.LOG_SEND||false;
+var logCommands = process.env.LOG_COMMANDS||true;
 
 //instanciamos el server...
 var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
@@ -39,7 +41,8 @@ var server = gpstracker.create().listen(process.env.TRACKER_PORT||9000, () => {
 //preparamos los eventos...
 server.trackers.on('logon', (tracker) => {
   //cuando un tracker se quiere conectar...
-
+  tracker.logSend = logSend;
+  tracker.logCommands = logCommands;
   console.log('tracker con imei solicita acceso:', tracker.imei);
 
   //podemos...
