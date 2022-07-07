@@ -24,6 +24,6 @@
   "dependencies": {
     "console-stamp": "^0.2.9",
     "dotenv": "^8.1.0",
-    "moment": "^2.24.0"
+    "moment": "^2.29.4"
   }
 }
